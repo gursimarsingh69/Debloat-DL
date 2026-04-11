@@ -1,4 +1,4 @@
-# 🚀 Latency-Aware Intelligent Download Manager
+# 🚀 Debloat-DL
 
 A highly intelligent, multithreaded download engine designed to seamlessly download massive files in the background without causing network lag or bufferbloat while you are gaming or streaming.
 
