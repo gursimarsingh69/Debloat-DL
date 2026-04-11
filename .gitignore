@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Project-specific / Downloads
+*.zip
+*.rar
+*.iso
+*.metadata.json
+re9.rar
+phasmo.rar
+tb_test_100.zip
+test_100.zip
+
+# IDEs
+.vscode/
+.idea/
+
+# Notes
+info.md
+🚀 Latency-Aware Intelligent Downlo.txt
