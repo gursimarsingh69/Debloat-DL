@@ -9,8 +9,9 @@ class StorageManager:
         self.meta_path = f"{file_path}.metadata.json"
         self.lock = threading.Lock()
         self.metadata = {}
+        self.file_handle = None
 
-    def initialize_file(self, total_size, chunk_size):
+    def initialize_file(self, total_size, chunk_size, manifest_hashes=None):
         """Creates a sparse file and metadata if not exists for random access write."""
         with self.lock:
             if not os.path.exists(self.file_path):
@@ -33,14 +34,20 @@ class StorageManager:
                 for i in range(num_chunks):
                     start = i * chunk_size
                     end = min(start + chunk_size - 1, total_size - 1) if total_size > 0 else 0
-                    chunks.append({
+                    chunk_data = {
                         "id": i,
                         "start": start,
                         "end": end,
                         "status": "pending"  # pending, downloading, done
-                    })
+                    }
+                    if manifest_hashes and str(i) in manifest_hashes:
+                        chunk_data["expected_hash"] = manifest_hashes[str(i)]
+                    chunks.append(chunk_data)
                 self.metadata = {"total_size": total_size, "chunks": chunks}
                 self._save_metadata_nolock()
+                
+            if self.file_handle is None:
+                self.file_handle = open(self.file_path, "r+b")
 
     def get_pending_chunks(self):
         """Returns chunks left to download and resets downloading chunks to pending."""
@@ -56,10 +63,9 @@ class StorageManager:
     def write_chunk_data(self, chunk_id, offset, data):
         """Writes data at specific offset using random access."""
         with self.lock:
-            # r+b doesn't truncate the file and allows seek
-            with open(self.file_path, "r+b") as f:
-                f.seek(offset)
-                f.write(data)
+            if self.file_handle:
+                self.file_handle.seek(offset)
+                self.file_handle.write(data)
 
     def mark_chunk_status(self, chunk_id, status):
         with self.lock:
@@ -96,4 +102,37 @@ class StorageManager:
             # Clean up metadata if complete
             if os.path.exists(self.meta_path):
                 os.remove(self.meta_path)
+            self.close()
             return True
+
+    def close(self):
+        """Releases the persistently locked file handle logic."""
+        with self.lock:
+            if self.file_handle:
+                try:
+                    self.file_handle.close()
+                except:
+                    pass
+                self.file_handle = None
+
+    def verify_sha256_piecewise(self):
+        """Yields piecewise hashed bytes for progress tracking."""
+        sha256 = hashlib.sha256()
+        total_size = os.path.getsize(self.file_path)
+        bytes_read = 0
+        chunk_size = 1024 * 1024 # 1MB chunk to reduce GUI updates density
+        with open(self.file_path, "rb") as f:
+            for byte_block in iter(lambda: f.read(chunk_size), b""):
+                sha256.update(byte_block)
+                bytes_read += len(byte_block)
+                yield bytes_read, total_size, sha256.hexdigest()
+
+    def apply_motw(self):
+        """Applies Windows Mark of the Web to trigger SmartScreen on execution."""
+        if os.name == 'nt':
+            try:
+                zone_identifier_path = f"{self.file_path}:Zone.Identifier"
+                with open(zone_identifier_path, "w") as f:
+                    f.write("[ZoneTransfer]\nZoneId=3\n")
+            except Exception:
+                pass

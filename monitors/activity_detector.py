@@ -12,6 +12,11 @@ class ActivityDetector:
         self.lock = threading.Lock()
         
         self.current_activity = "Idle"
+        self.manual_mode = "Auto"
+        
+    def set_mode(self, mode):
+        with self.lock:
+            self.manual_mode = mode
         
     def start(self):
         self.running = True
@@ -45,16 +50,22 @@ class ActivityDetector:
                 elif udp_conns > 50:
                     # Many UDP packets sent/received signals gaming or VoIP
                     activity = "Gaming"
-                elif dl_mbps > 10.0:
+                elif dl_mbps > 5.0:
                     # Continuous high download likely streaming
                     activity = "Streaming"
                 
                 with self.lock:
-                    self.current_activity = activity
+                    if self.manual_mode == "Auto":
+                        self.current_activity = activity
+                    else:
+                        self.current_activity = self.manual_mode + " (Manual)"
             except psutil.AccessDenied:
                 # If access denied for net_connections, fall back to pure bandwidth heuristics
                 with self.lock:
-                    self.current_activity = "Unknown (No Admin)"
+                    if self.manual_mode == "Auto":
+                        self.current_activity = "Unknown (No Admin)"
+                    else:
+                        self.current_activity = self.manual_mode + " (Manual)"
                     
             time.sleep(self.interval)
 

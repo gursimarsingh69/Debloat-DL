@@ -42,7 +42,7 @@ class Scheduler:
             # Decision Matrix
             
             # 1. Extreme conditions (Packet Loss / Congested)
-            if packet_loss > 5.0 or activity == "Congested":
+            if packet_loss > 5.0 or activity.startswith("Congested"):
                 # Severe throttle
                 self.throttler.set_max_threads(1)
                 self.throttler.set_target_bps(1024 * 1024) # 1MB/s Hard cap
@@ -50,14 +50,14 @@ class Scheduler:
                 continue
                 
             # 2. Activity based
-            if activity == "Gaming":
+            if activity.startswith("Gaming"):
                 # Minimize jitter impacts
                 self.throttler.set_max_threads(2)
                 self.throttler.set_target_bps(5 * 1024 * 1024) # 5MB/s limit
                 self.throttler.set_buffer_size(32 * 1024)
                 continue
                 
-            if activity == "Streaming":
+            if activity.startswith("Streaming"):
                 # Medium throttle
                 self.throttler.set_max_threads(8)
                 self.throttler.set_target_bps(None) # unlimited technically, but limited threads reduce spikes

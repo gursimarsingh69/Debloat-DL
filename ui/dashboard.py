@@ -5,6 +5,7 @@ from rich.layout import Layout
 from rich.text import Text
 from rich.progress import Progress, BarColumn, TextColumn, TransferSpeedColumn, TimeRemainingColumn
 import time
+import msvcrt
 
 class Dashboard:
     def __init__(self, engine, latency_mon, net_mon, activity_det, throttler):
@@ -25,7 +26,7 @@ class Dashboard:
         net_stats = self.net_mon.get_stats()
         activity = self.activity_det.get_activity()
         
-        table.add_row("Detected Activity", f"[bold cyan]{activity}[/bold cyan]")
+        table.add_row("Detected Activity", f"[bold cyan]{activity}[/bold cyan] [dim](Press G=Gaming, S=Streaming, I=Idle, A=Auto)[/dim]")
         table.add_row("Latencies (Router/ISP/Target)", f"{lat_stats.get('router_latency', 0.0):.1f}ms / {lat_stats.get('isp_latency', 0.0):.1f}ms / {lat_stats.get('target_latency', 0.0):.1f}ms")
         table.add_row("DNS Time / Buffer Bloat", f"{lat_stats.get('dns_time', 0.0):.1f}ms / {lat_stats.get('buffer_bloat', 0.0):.1f}ms")
         table.add_row("Target Jitter / Loss", f"{lat_stats.get('target_jitter', 0.0):.1f}ms / {lat_stats.get('target_loss', 0.0):.1f}%")
@@ -60,6 +61,17 @@ class Dashboard:
             try:
                 # Keep running until the download is complete or we stop
                 while self.running:
+                    if msvcrt.kbhit():
+                        key = msvcrt.getch().decode('utf-8', errors='ignore').lower()
+                        if key == 'g':
+                            self.activity_det.set_mode("Gaming")
+                        elif key == 's':
+                            self.activity_det.set_mode("Streaming")
+                        elif key == 'i':
+                            self.activity_det.set_mode("Idle")
+                        elif key == 'a':
+                            self.activity_det.set_mode("Auto")
+                            
                     # check if the engine has stopped
                     if getattr(self.engine, 'aborted', None) and self.engine.aborted.is_set():
                         break

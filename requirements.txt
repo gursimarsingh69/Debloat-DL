@@ -2,3 +2,4 @@ requests==2.31.0
 psutil==5.9.8
 rich==13.7.1
 dnspython>=2.0.0
+PGPy>=0.6.0
