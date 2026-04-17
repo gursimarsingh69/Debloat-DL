@@ -31,15 +31,13 @@ class Scheduler:
             lat_stats = self.latency_monitor.get_stats()
             activity = self.activity_detector.get_activity()
             
-            cur_lat = lat_stats["latency_current"]
-            jitter = lat_stats["jitter"]
-            packet_loss = lat_stats["packet_loss"]
+            cur_lat = lat_stats.get("target_latency", 0.0)
+            jitter = lat_stats.get("target_jitter", 0.0)
+            packet_loss = lat_stats.get("target_loss", 0.0)
+            bloat = lat_stats.get("buffer_bloat", 0.0)
             
             if cur_lat <= 0:
                 continue
-                
-            if self.baseline_latency is None:
-                self.baseline_latency = cur_lat
                 
             # Decision Matrix
             
@@ -67,14 +65,12 @@ class Scheduler:
                 continue
                 
             # 3. Dynamic Latency check (AIMD like)
-            lat_ratio = cur_lat / self.baseline_latency if self.baseline_latency > 0 else 1.0
-            
-            if lat_ratio > 2.0 or jitter > 50.0:
+            if bloat > 80.0 or jitter > 50.0:
                 # High latency -> Multiplicative Decrease
                 curr_threads = self.throttler.get_max_threads()
                 new_threads = max(2, curr_threads // 2)
                 self.throttler.set_max_threads(new_threads)
-            elif lat_ratio < 1.2 and jitter < 15.0:
+            elif bloat < 20.0 and jitter < 15.0:
                 # Stable -> Additive Increase
                 curr_threads = self.throttler.get_max_threads()
                 if curr_threads < 32:

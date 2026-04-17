@@ -36,16 +36,16 @@ class ActivityDetector:
                 # Check active UDP connections
                 # Requires admin privileges on some systems to get full process table, but we count connections
                 # UDP has no state, so status is always NONE. We just count active bindings.
-                udp_conns = sum(1 for c in conns if c.type == 2) # SOCK_DGRAM
-                
+                conns = psutil.net_connections(kind='udp')
+                udp_conns = len(conns)
                 activity = "Idle"
                 
-                if lat_stats.get("packet_loss", 0.0) > 5.0 or lat_stats.get("latency", 0.0) > 200.0:
+                if lat_stats.get("target_loss", 0.0) > 5.0 or lat_stats.get("buffer_bloat", 0.0) > 100.0 or lat_stats.get("dns_time", 0.0) > 150.0:
                     activity = "Congested"
                 elif udp_conns > 50:
                     # Many UDP packets sent/received signals gaming or VoIP
                     activity = "Gaming"
-                elif dl_mbps > 5.0:
+                elif dl_mbps > 10.0:
                     # Continuous high download likely streaming
                     activity = "Streaming"
                 

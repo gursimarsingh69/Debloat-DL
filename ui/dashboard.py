@@ -26,8 +26,9 @@ class Dashboard:
         activity = self.activity_det.get_activity()
         
         table.add_row("Detected Activity", f"[bold cyan]{activity}[/bold cyan]")
-        table.add_row("Latency / Jitter", f"{lat_stats['latency_current']:.1f}ms / {lat_stats['jitter']:.1f}ms")
-        table.add_row("Packet Loss", f"{lat_stats['packet_loss']:.1f}%")
+        table.add_row("Latencies (Router/ISP/Target)", f"{lat_stats.get('router_latency', 0.0):.1f}ms / {lat_stats.get('isp_latency', 0.0):.1f}ms / {lat_stats.get('target_latency', 0.0):.1f}ms")
+        table.add_row("DNS Time / Buffer Bloat", f"{lat_stats.get('dns_time', 0.0):.1f}ms / {lat_stats.get('buffer_bloat', 0.0):.1f}ms")
+        table.add_row("Target Jitter / Loss", f"{lat_stats.get('target_jitter', 0.0):.1f}ms / {lat_stats.get('target_loss', 0.0):.1f}%")
         
         dl_mbps = net_stats["download_speed_bps"] / 1024 / 1024
         ul_mbps = net_stats["upload_speed_bps"] / 1024 / 1024
